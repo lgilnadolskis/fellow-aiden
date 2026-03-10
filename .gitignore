@@ -14,4 +14,4 @@ venv3/
 client.py
 .devcontainer
 .streamlit
-.vscode
+.vscodetests/testing_aiden_lgn.py
