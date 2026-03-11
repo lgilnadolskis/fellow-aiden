@@ -29,6 +29,9 @@ logging.basicConfig(
 )
 log = logging.getLogger("create_schedule")
 
+# Silence the fellow_aiden library's verbose DEBUG handler
+logging.getLogger("FELLOW-AIDEN").setLevel(logging.WARNING)
+
 # ---------------------------------------------------------------------------
 # Day helpers
 # ---------------------------------------------------------------------------
@@ -168,12 +171,29 @@ def get_now_plus_10() -> tuple[int, list[bool]]:
 # ---------------------------------------------------------------------------
 
 def display_profiles(profiles: list[dict]):
-    """Print profiles in a numbered list for selection."""
-    print(f"\n  Available profiles ({len(profiles)}):\n")
+    """Print profiles in a numbered list, grouped by folder."""
+    # Group by folder
+    groups: dict[str, list[tuple[int, dict]]] = {}
     for idx, p in enumerate(profiles, 1):
-        bloom = "bloom" if p.get("bloomEnabled") else "no bloom"
-        print(f"    {idx:>2}. {p.get('title', 'Untitled'):<35} (ratio 1:{p.get('ratio')}, {bloom})")
-    print()
+        folder = p.get('folder', 'Other') or 'Other'
+        groups.setdefault(folder, []).append((idx, p))
+
+    # Determine column width from longest title
+    max_title = max((len(p.get('title', '')) for p in profiles), default=20)
+    col = max(max_title + 2, 25)
+
+    print(f"\n  Available profiles ({len(profiles)}):\n")
+    # Show Custom first, then Fellow, then Drops, then anything else
+    order = ['Custom', 'Fellow', 'Drops']
+    for folder in order + [f for f in groups if f not in order]:
+        if folder not in groups:
+            continue
+        print(f"  ── {folder} ──")
+        for idx, p in groups[folder]:
+            bloom = "bloom" if p.get("bloomEnabled") else "no bloom"
+            title = p.get('title', 'Untitled')
+            print(f"    {idx:>2}. {title:<{col}} (ratio 1:{p.get('ratio')}, {bloom})")
+        print()
 
 
 def select_profile(profiles: list[dict], selection: str = None) -> dict:
