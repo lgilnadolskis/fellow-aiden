@@ -1,0 +1,2 @@
+id,enabled,time,days,days_readable,amountOfWater,profileId,createdAt
+s1,True,08:00:00,"[false, false, false, false, false, false, false]",None,450,p0,

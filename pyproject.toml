@@ -13,7 +13,9 @@ authors = [
 license = { text = "GNUv3" }
 dependencies = [
     "requests>=2.32.3",
-    "pydantic>=2.10.4"
+    "pydantic>=2.10.4",
+    "setuptools>=82.0.1",
+    "openai>=2.26.0",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
