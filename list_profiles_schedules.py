@@ -27,41 +27,39 @@ def days_to_string(days_list):
 
 def print_profiles(profiles):
     """Print profiles in a readable format."""
-    print("\n" + "="*80)
-    print(f"{'COFFEE PROFILES':^80}")
-    print("="*80)
-    print(f"\nTotal Profiles: {len(profiles)}\n")
+    print(f"\nCoffee Profiles")
+    print(f"Total: {len(profiles)}\n")
     
     for idx, profile in enumerate(profiles, 1):
-        print(f"\n--- Profile {idx}: {profile.get('title', 'Untitled')} ---")
+        print(f"\nProfile {idx}: {profile.get('title', 'Untitled')}")
         print(f"  ID: {profile.get('id', 'N/A')}")
         print(f"  Ratio: 1:{profile.get('ratio', 'N/A')}")
         print(f"  Bloom: {'Enabled' if profile.get('bloomEnabled') else 'Disabled'}")
         
         if profile.get('bloomEnabled'):
-            print(f"    - Bloom Ratio: {profile.get('bloomRatio', 'N/A')}")
-            print(f"    - Bloom Duration: {profile.get('bloomDuration', 'N/A')}s")
-            print(f"    - Bloom Temperature: {profile.get('bloomTemperature', 'N/A')}°C")
+            print(f"    Bloom Ratio: {profile.get('bloomRatio', 'N/A')}")
+            print(f"    Bloom Duration: {profile.get('bloomDuration', 'N/A')} seconds")
+            print(f"    Bloom Temperature: {profile.get('bloomTemperature', 'N/A')} degrees C")
         
         # Single Serve Pulses
         if profile.get('ssPulsesEnabled'):
             print(f"  Single Serve Pulses: Enabled")
-            print(f"    - Number of Pulses: {profile.get('ssPulsesNumber', 'N/A')}")
-            print(f"    - Interval: {profile.get('ssPulsesInterval', 'N/A')}s")
+            print(f"    Number of Pulses: {profile.get('ssPulsesNumber', 'N/A')}")
+            print(f"    Interval: {profile.get('ssPulsesInterval', 'N/A')} seconds")
             temps = profile.get('ssPulseTemperatures', [])
             if temps:
-                print(f"    - Temperatures: {', '.join([f'{t}°C' for t in temps])}")
+                print(f"    Temperatures: {', '.join([str(t) + ' C' for t in temps])}")
         else:
             print(f"  Single Serve Pulses: Disabled")
         
         # Batch Pulses
         if profile.get('batchPulsesEnabled'):
             print(f"  Batch Pulses: Enabled")
-            print(f"    - Number of Pulses: {profile.get('batchPulsesNumber', 'N/A')}")
-            print(f"    - Interval: {profile.get('batchPulsesInterval', 'N/A')}s")
+            print(f"    Number of Pulses: {profile.get('batchPulsesNumber', 'N/A')}")
+            print(f"    Interval: {profile.get('batchPulsesInterval', 'N/A')} seconds")
             temps = profile.get('batchPulseTemperatures', [])
             if temps:
-                print(f"    - Temperatures: {', '.join([f'{t}°C' for t in temps])}")
+                print(f"    Temperatures: {', '.join([str(t) + ' C' for t in temps])}")
         else:
             print(f"  Batch Pulses: Disabled")
         
@@ -70,30 +68,27 @@ def print_profiles(profiles):
             print(f"  Last Used: {profile.get('lastUsedTime')}")
         if profile.get('isDefaultProfile'):
             print(f"  Default Profile: Yes")
-    
-    print("\n" + "="*80 + "\n")
+    print("")
 
 
 def print_schedules(schedules):
     """Print schedules in a readable format."""
-    print("\n" + "="*80)
-    print(f"{'BREW SCHEDULES':^80}")
-    print("="*80)
-    print(f"\nTotal Schedules: {len(schedules)}\n")
+    print(f"\nBrew Schedules")
+    print(f"Total: {len(schedules)}\n")
     
     if not schedules:
-        print("  No schedules configured.\n")
+        print("No schedules configured.")
     else:
         for idx, schedule in enumerate(schedules, 1):
-            status = "ENABLED" if schedule.get('enabled') else "DISABLED"
-            print(f"\n--- Schedule {idx} [{status}] ---")
+            status = "Enabled" if schedule.get('enabled') else "Disabled"
+            print(f"\nSchedule {idx}: {status}")
             print(f"  ID: {schedule.get('id', 'N/A')}")
             print(f"  Time: {seconds_to_time(schedule.get('secondFromStartOfTheDay', 0))}")
             print(f"  Days: {days_to_string(schedule.get('days', []))}")
-            print(f"  Water Amount: {schedule.get('amountOfWater', 'N/A')}ml")
+            print(f"  Water: {schedule.get('amountOfWater', 'N/A')} ml")
             print(f"  Profile ID: {schedule.get('profileId', 'N/A')}")
     
-    print("\n" + "="*80 + "\n")
+    print("")
 
 
 def save_profiles_to_csv(profiles, filename='profiles.csv'):
@@ -124,7 +119,7 @@ def save_profiles_to_csv(profiles, filename='profiles.csv'):
                 row['batchPulseTemperatures'] = json.dumps(row['batchPulseTemperatures'])
             writer.writerow(row)
     
-    print(f"✓ Profiles saved to {filename}")
+    print(f"Profiles saved to {filename}.")
 
 
 def save_schedules_to_csv(schedules, filename='schedules.csv'):
@@ -152,14 +147,12 @@ def save_schedules_to_csv(schedules, filename='schedules.csv'):
                 row['days'] = json.dumps(row['days'])
             writer.writerow(row)
     
-    print(f"✓ Schedules saved to {filename}")
+    print(f"Schedules saved to {filename}.")
 
 
 def main():
     """Main function to retrieve and display profiles and schedules."""
-    print("\n" + "="*80)
-    print(f"{'FELLOW AIDEN - PROFILES & SCHEDULES EXPORTER':^80}")
-    print("="*80 + "\n")
+    print("\nFellow Aiden - Profiles and Schedules Exporter\n")
     
     # Get credentials from environment variables or prompt
     email = os.environ.get('FELLOW_EMAIL')
@@ -172,19 +165,19 @@ def main():
         password = getpass.getpass("Enter your Fellow account password: ").strip()
     
     try:
-        print("\nConnecting to Fellow Aiden...")
+        print("Connecting to Fellow Aiden...")
         aiden = FellowAiden(email, password)
-        print(f"✓ Connected to: {aiden.get_display_name()}")
+        print(f"Connected to: {aiden.get_display_name()}")
         
         # Get profiles
-        print("\nRetrieving profiles...")
+        print("Retrieving profiles...")
         profiles = aiden.get_profiles()
-        print(f"✓ Retrieved {len(profiles)} profiles")
+        print(f"Retrieved {len(profiles)} profiles.")
         
         # Get schedules
         print("Retrieving schedules...")
         schedules = aiden.get_schedules()
-        print(f"✓ Retrieved {len(schedules)} schedules")
+        print(f"Retrieved {len(schedules)} schedules.")
         
         # Print to console
         print_profiles(profiles)
@@ -195,15 +188,12 @@ def main():
         save_profiles_to_csv(profiles, 'profiles.csv')
         save_schedules_to_csv(schedules, 'schedules.csv')
         
-        print("\n✓ Export complete!")
-        print("\nFiles created:")
-        print("  - profiles.csv")
-        print("  - schedules.csv")
-        print("\n" + "="*80 + "\n")
+        print("\nExport complete.")
+        print("Files created: profiles.csv, schedules.csv")
         
     except Exception as e:
-        print(f"\n✗ Error: {e}")
-        print("Please check your credentials and try again.\n")
+        print(f"\nError: {e}")
+        print("Please check your credentials and try again.")
         return 1
     
     return 0

@@ -182,17 +182,17 @@ def display_profiles(profiles: list[dict]):
     max_title = max((len(p.get('title', '')) for p in profiles), default=20)
     col = max(max_title + 2, 25)
 
-    print(f"\n  Available profiles ({len(profiles)}):\n")
+    print(f"\nAvailable profiles ({len(profiles)}):\n")
     # Show Custom first, then Fellow, then Drops, then anything else
     order = ['Custom', 'Fellow', 'Drops']
     for folder in order + [f for f in groups if f not in order]:
         if folder not in groups:
             continue
-        print(f"  ── {folder} ──")
+        print(f"[{folder}]")
         for idx, p in groups[folder]:
             bloom = "bloom" if p.get("bloomEnabled") else "no bloom"
             title = p.get('title', 'Untitled')
-            print(f"    {idx:>2}. {title:<{col}} (ratio 1:{p.get('ratio')}, {bloom})")
+            print(f"  {idx:>2}. {title:<{col}} ratio 1:{p.get('ratio')}, {bloom}")
         print()
 
 
@@ -221,68 +221,62 @@ def select_profile(profiles: list[dict], selection: str = None) -> dict:
 
 def interactive_mode(aiden: FellowAiden):
     """Step-by-step schedule creation wizard."""
-    print("\n" + "=" * 60)
-    print("  SCHEDULE CREATOR")
-    print("=" * 60)
+    print("\nSchedule Creator\n")
 
-    # Step 1 — Select profile
+    # Step 1: Select profile
     profiles = aiden.get_profiles()
     if not profiles:
-        print("\n  No profiles found on your Aiden. Create one first.\n")
+        print("No profiles found on your Aiden. Create one first.")
         return None
 
     display_profiles(profiles)
 
     while True:
-        choice = input("  Select a profile (number or name): ").strip()
+        choice = input("Select a profile (number or name): ").strip()
         try:
             profile = select_profile(profiles, choice)
             if profile:
                 break
         except ValueError as e:
-            print(f"  ✗ {e}")
+            print(f"Error: {e}")
 
-    print(f"  ✓ Selected: {profile['title']}")
+    print(f"Selected: {profile['title']}")
 
-    # Step 2 — Days
+    # Step 2: Days
     print()
-    print("  When should this brew? Options:")
-    print("    everyday, weekdays, weekends")
-    print("    Or specific days: mon,wed,fri")
-    print()
+    print("When should this brew?")
+    print("Options: everyday, weekdays, weekends, or specific days like mon,wed,fri")
 
     while True:
-        days_input = input("  Days: ").strip()
+        days_input = input("Days: ").strip()
         try:
             days = parse_days(days_input)
             break
         except ValueError as e:
-            print(f"  ✗ {e}")
+            print(f"Error: {e}")
 
-    print(f"  ✓ Days: {days_to_string(days)}")
+    print(f"Days: {days_to_string(days)}")
 
-    # Step 3 — Time
+    # Step 3: Time
     print()
-    print("  What time? (examples: 7:30am, 14:30, 6am)")
-    print()
+    print("What time? Examples: 7:30am, 14:30, 6am")
 
     while True:
-        time_input = input("  Time: ").strip()
+        time_input = input("Time: ").strip()
         try:
             seconds = parse_time(time_input)
             break
         except ValueError as e:
-            print(f"  ✗ {e}")
+            print(f"Error: {e}")
 
-    print(f"  ✓ Time: {seconds_to_time_str(seconds)}")
+    print(f"Time: {seconds_to_time_str(seconds)}")
 
-    # Step 4 — Water amount
+    # Step 4: Water amount
     print()
-    print("  How much water? (150-1500ml, default: 450)")
-    print()
+    print("How much water? 150 to 1500 ml, default 450.")
 
     while True:
-        water_input = input("  Water (ml): ").strip()
+        water_input = input("Water in ml: ").strip()
         if not water_input:
             water = 450
             break
@@ -290,24 +284,24 @@ def interactive_mode(aiden: FellowAiden):
             water = int(water_input.replace('ml', '').strip())
             if 150 <= water <= 1500:
                 break
-            print("  ✗ Must be between 150 and 1500ml")
+            print("Error: Must be between 150 and 1500 ml.")
         except ValueError:
-            print("  ✗ Enter a number between 150 and 1500")
+            print("Error: Enter a number between 150 and 1500.")
 
-    print(f"  ✓ Water: {water}ml")
+    print(f"Water: {water} ml")
 
     # Confirm
     print()
-    print("  ── Schedule Summary ──")
-    print(f"    Profile: {profile['title']}")
-    print(f"    Days:    {days_to_string(days)}")
-    print(f"    Time:    {seconds_to_time_str(seconds)}")
-    print(f"    Water:   {water}ml")
+    print("Schedule summary:")
+    print(f"  Profile: {profile['title']}")
+    print(f"  Days: {days_to_string(days)}")
+    print(f"  Time: {seconds_to_time_str(seconds)}")
+    print(f"  Water: {water} ml")
     print()
 
-    confirm = input("  Create this schedule? (Y/n): ").strip().lower()
+    confirm = input("Create this schedule? Y or n: ").strip().lower()
     if confirm and confirm != 'y':
-        print("  Cancelled.\n")
+        print("Cancelled.")
         return None
 
     return create_and_save_schedule(aiden, profile['id'], days, seconds, water)
@@ -319,36 +313,34 @@ def interactive_mode(aiden: FellowAiden):
 
 def now_mode(aiden: FellowAiden, water: int = 450):
     """Pick a profile and brew in ~10 minutes."""
-    print("\n" + "=" * 60)
-    print("  QUICK BREW — starts in ~10 minutes")
-    print("=" * 60)
+    print("\nQuick Brew - starts in about 10 minutes\n")
 
     profiles = aiden.get_profiles()
     if not profiles:
-        print("\n  No profiles found on your Aiden. Create one first.\n")
+        print("No profiles found on your Aiden. Create one first.")
         return None
 
     display_profiles(profiles)
 
     while True:
-        choice = input("  Pick a profile (number or name): ").strip()
+        choice = input("Pick a profile (number or name): ").strip()
         try:
             profile = select_profile(profiles, choice)
             if profile:
                 break
         except ValueError as e:
-            print(f"  ✗ {e}")
+            print(f"Error: {e}")
 
     seconds, days = get_now_plus_10()
 
-    print(f"\n  ✓ Profile: {profile['title']}")
-    print(f"  ✓ Brew at: {seconds_to_time_str(seconds)} (now + 10 min)")
-    print(f"  ✓ Water:   {water}ml")
+    print(f"\nProfile: {profile['title']}")
+    print(f"Brew at: {seconds_to_time_str(seconds)} (now plus 10 minutes)")
+    print(f"Water: {water} ml")
     print()
 
-    confirm = input("  Start? (Y/n): ").strip().lower()
+    confirm = input("Start? Y or n: ").strip().lower()
     if confirm and confirm != 'y':
-        print("  Cancelled.\n")
+        print("Cancelled.")
         return None
 
     return create_and_save_schedule(aiden, profile['id'], days, seconds, water)
@@ -369,14 +361,13 @@ def create_and_save_schedule(aiden: FellowAiden, profile_id: str, days: list[boo
         "profileId": profile_id,
     }
 
-    print("\n  Saving schedule to Aiden...")
+    print("\nSaving schedule to Aiden...")
     try:
         result = aiden.create_schedule(schedule_data)
-        print(f"  ✓ Schedule created! (ID: {result.get('id', '?')})")
-        print("=" * 60 + "\n")
+        print(f"Schedule created. ID: {result.get('id', 'unknown')}")
         return result
     except Exception as e:
-        print(f"  ✗ Failed to create schedule: {e}\n")
+        print(f"Failed to create schedule: {e}")
         return None
 
 
@@ -486,10 +477,10 @@ Environment variables:
             log.error("Water must be between 150 and 1500ml.")
             sys.exit(1)
 
-        print(f"\n  Profile: {profile['title']}")
-        print(f"  Days:    {days_to_string(days)}")
-        print(f"  Time:    {seconds_to_time_str(seconds)}")
-        print(f"  Water:   {water}ml")
+        print(f"\nProfile: {profile['title']}")
+        print(f"Days: {days_to_string(days)}")
+        print(f"Time: {seconds_to_time_str(seconds)}")
+        print(f"Water: {water} ml")
 
         create_and_save_schedule(aiden, profile['id'], days, seconds, water)
 

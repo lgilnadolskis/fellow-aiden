@@ -309,50 +309,49 @@ def process_image(client: OpenAI, aiden: FellowAiden, image_path: str) -> list[d
 
     # Step 1.5 — If this is a Fellow Drops coffee, look for an existing profile
     if is_drops:
-        print(f"\n  Fellow Drops coffee detected — checking for existing profile...")
+        print(f"\nFellow Drops coffee detected. Checking for existing profile...")
         existing = find_drops_profile(aiden, coffee_info)
         if existing:
-            print(f"  ✓ Found existing Drops profile on your Aiden:")
-            print(f"    Title: {existing.get('title')}")
-            print(f"    ID:    {existing.get('id')}")
-            print(f"    Ratio: 1:{existing.get('ratio')}")
+            print(f"Found existing Drops profile on your Aiden:")
+            print(f"  Title: {existing.get('title')}")
+            print(f"  ID: {existing.get('id')}")
+            print(f"  Ratio: 1:{existing.get('ratio')}")
             bloom = "Enabled" if existing.get("bloomEnabled") else "Disabled"
-            print(f"    Bloom: {bloom}")
+            print(f"  Bloom: {bloom}")
             if existing.get("bloomEnabled"):
-                print(f"      Duration: {existing.get('bloomDuration')}s")
-                print(f"      Temp:     {existing.get('bloomTemperature')}°C")
-            print(f"\n  No new profiles generated — using the Drops profile.")
-            print("=" * 70 + "\n")
+                print(f"  Bloom duration: {existing.get('bloomDuration')} seconds")
+                print(f"  Bloom temperature: {existing.get('bloomTemperature')} degrees C")
+            print(f"\nNo new profiles generated. Using the Drops profile.")
             return [{"style": "Fellow Drops", "profile_id": existing.get("id"), "title": existing.get("title"), "recipe_text": "(existing)"}]
         else:
-            print(f"  ⚠ Fellow Drops coffee detected but no matching profile found on your Aiden.")
-            print(f"    The Drops profile may not have been synced yet.")
-            print(f"    Generating custom profiles instead...\n")
+            print(f"Warning: Fellow Drops coffee detected but no matching profile found on your Aiden.")
+            print(f"The Drops profile may not have been synced yet.")
+            print(f"Generating custom profiles instead.\n")
 
     # Step 2 — Generate 4 profiles
     saved_profiles = []
     for style in PROFILE_STYLES:
-        print(f"\n  [{style['label']}]")
+        print(f"\nStyle: {style['label']}")
 
         # Generate recipe text
         recipe_text = generate_recipe(client, description, style)
-        print(f"    Recipe generated ✓")
+        print(f"Recipe generated.")
 
         # Parse into structured profile
         profile = extract_profile(client, recipe_text)
         if not profile:
-            print(f"    ✗ Failed to parse recipe — skipping")
+            print(f"Failed to parse recipe. Skipping.")
             continue
 
         profile_data = profile.model_dump()
         profile_data["profileType"] = 0
-        print(f"    Title: {profile_data['title']}")
-        print(f"    Ratio: 1:{profile_data['ratio']}")
+        print(f"Title: {profile_data['title']}")
+        print(f"Ratio: 1:{profile_data['ratio']}")
 
-        # Step 3 — Save to machine
+        # Step 3: Save to machine
         try:
             created = aiden.create_profile(profile_data)
-            print(f"    Saved to Aiden ✓ (ID: {created.get('id', '?')})")
+            print(f"Saved to Aiden. ID: {created.get('id', 'unknown')}")
             saved_profiles.append({
                 "style": style["label"],
                 "profile_id": created.get("id"),
@@ -360,14 +359,12 @@ def process_image(client: OpenAI, aiden: FellowAiden, image_path: str) -> list[d
                 "recipe_text": recipe_text,
             })
         except Exception as e:
-            log.error("    ✗ Failed to save: %s", e)
+            log.error("Failed to save: %s", e)
 
     # Summary
-    print(f"\n  ── Summary ──")
-    print(f"  {len(saved_profiles)}/{len(PROFILE_STYLES)} profiles saved to Aiden")
+    print(f"\nSummary: {len(saved_profiles)} of {len(PROFILE_STYLES)} profiles saved to Aiden.")
     for sp in saved_profiles:
-        print(f"    • [{sp['style']}] {sp['title']} ({sp['profile_id']})")
-    print("=" * 70 + "\n")
+        print(f"  {sp['style']}: {sp['title']}, ID {sp['profile_id']}")
 
     return saved_profiles
 
