@@ -1,6 +1,7 @@
 import streamlit as st
 from fellow_aiden import FellowAiden
 from fellow_aiden.profile import CoffeeProfile
+from brew_recommendation import build_brew_recommendation
 from openai import OpenAI
 
 SYSTEM = """
@@ -119,6 +120,8 @@ def save_profile_to_coffee_machine(profile_name, updated_profile):
     st.success(f"Profile '{profile_name}' saved.")
     if 'description' in updated_profile:
         updated_profile.pop('description', None)
+    if 'calculations' in updated_profile:
+        updated_profile.pop('calculations', None)
     updated_profile['profileType'] = 0
     
     try:
@@ -163,7 +166,7 @@ def extract_recipe_from_description(model_explanation):
     return model_recipe
 
 
-def generate_ai_recipe_and_explanation(USER):
+def generate_ai_recipe_and_explanation(USER, brew_water_ml=180):
     guidance = "Suggest a recipe for the following coffee. Provide your explanations below the recipe.\n"
     USER = ' '.join([guidance, USER])
     completion = st.session_state['oai'].chat.completions.create(
@@ -182,6 +185,8 @@ def generate_ai_recipe_and_explanation(USER):
 
     recipe = model_recipe.model_dump()
     recipe['description'] = model_explanation
+    recipe['calculations'] = build_brew_recommendation(brew_water_ml, recipe['ratio'])
+    recipe['calculations']['brew_water_ml'] = brew_water_ml
     return recipe
 
 
@@ -273,6 +278,14 @@ with st.sidebar:
         st.markdown("#### OpenAI API Key")
         openai_api_key = st.text_input(" ", placeholder="Enter your OpenAI API Key", 
                                     type="password", key="openai_api_key", label_visibility="collapsed")
+        brew_water_ml = st.number_input(
+            "Brew water (ml)",
+            min_value=150,
+            max_value=1500,
+            value=180,
+            step=10,
+            key="ai_brew_water_ml",
+        )
         user_coffee_request = st.text_area(
             "Describe your coffee:",
             placeholder="Light roasted blend of washed (Sidama, Ethiopia) and gesha (Santa Barbara, Honduras) coffees",
@@ -286,7 +299,7 @@ with st.sidebar:
                 if user_coffee_request.strip():
 
                     try:
-                        new_profile_data = generate_ai_recipe_and_explanation(user_coffee_request)
+                        new_profile_data = generate_ai_recipe_and_explanation(user_coffee_request, brew_water_ml)
                     except Exception as e:
                         st.warning(f"Failed to generate AI recipe: {e}")
                         new_profile_data = None
@@ -363,6 +376,11 @@ def render_profile_editor(profile_dict, profile_key="existing"):
         key=ss_key("description_input"),
         height=100
     )
+
+    calculations = profile_dict.get("calculations")
+    if calculations:
+        st.markdown("**Brew calculations**")
+        st.json(calculations)
 
     # Save button
     if st.button("Save", key=ss_key("save_button")):

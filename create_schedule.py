@@ -19,6 +19,8 @@ import logging
 from datetime import datetime, timedelta
 
 from fellow_aiden import FellowAiden
+from brew_recommendation import build_brew_recommendation
+from profile_lookup import select_best_profile
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -199,48 +201,14 @@ def display_profiles(profiles: list[dict]):
 def select_profile(profiles: list[dict], selection: str = None) -> dict:
     """Select a profile by number or name."""
     if selection is not None:
-        # Try as number
-        try:
-            idx = int(selection) - 1
-            if 0 <= idx < len(profiles):
-                return profiles[idx]
-        except ValueError:
-            pass
-        # Try as name (fuzzy)
-        selection_lower = selection.lower()
-        for p in profiles:
-            if selection_lower in p.get('title', '').lower():
-                return p
-        raise ValueError(f"No profile matching '{selection}'")
+        return select_best_profile(profiles, selection)
     return None
 
 
-# ---------------------------------------------------------------------------
-# Interactive mode
-# ---------------------------------------------------------------------------
-
-def interactive_mode(aiden: FellowAiden):
-    """Step-by-step schedule creation wizard."""
-    print("\nSchedule Creator\n")
-
-    # Step 1: Select profile
-    profiles = aiden.get_profiles()
-    if not profiles:
-        print("No profiles found on your Aiden. Create one first.")
-        return None
-
-    display_profiles(profiles)
-
-    while True:
-        choice = input("Select a profile (number or name): ").strip()
-        try:
-            profile = select_profile(profiles, choice)
-            if profile:
-                break
-        except ValueError as e:
-            print(f"Error: {e}")
-
-    print(f"Selected: {profile['title']}")
+def schedule_for_profile(aiden: FellowAiden, profile: dict, prompt_for_profile: bool = False):
+    """Collect schedule details for a chosen profile and save the schedule."""
+    if prompt_for_profile:
+        print(f"Selected: {profile['title']}")
 
     # Step 2: Days
     print()
@@ -290,13 +258,13 @@ def interactive_mode(aiden: FellowAiden):
 
     print(f"Water: {water} ml")
 
-    # Confirm
     print()
     print("Schedule summary:")
     print(f"  Profile: {profile['title']}")
     print(f"  Days: {days_to_string(days)}")
     print(f"  Time: {seconds_to_time_str(seconds)}")
     print(f"  Water: {water} ml")
+    print_brew_recommendation(profile, water)
     print()
 
     confirm = input("Create this schedule? Y or n: ").strip().lower()
@@ -305,6 +273,34 @@ def interactive_mode(aiden: FellowAiden):
         return None
 
     return create_and_save_schedule(aiden, profile['id'], days, seconds, water)
+
+
+# ---------------------------------------------------------------------------
+# Interactive mode
+# ---------------------------------------------------------------------------
+
+def interactive_mode(aiden: FellowAiden):
+    """Step-by-step schedule creation wizard."""
+    print("\nSchedule Creator\n")
+
+    # Step 1: Select profile
+    profiles = aiden.get_profiles()
+    if not profiles:
+        print("No profiles found on your Aiden. Create one first.")
+        return None
+
+    display_profiles(profiles)
+
+    while True:
+        choice = input("Select a profile (number or name): ").strip()
+        try:
+            profile = select_profile(profiles, choice)
+            if profile:
+                break
+        except ValueError as e:
+            print(f"Error: {e}")
+
+    return schedule_for_profile(aiden, profile, prompt_for_profile=True)
 
 
 # ---------------------------------------------------------------------------
@@ -369,6 +365,19 @@ def create_and_save_schedule(aiden: FellowAiden, profile_id: str, days: list[boo
     except Exception as e:
         print(f"Failed to create schedule: {e}")
         return None
+
+
+def print_brew_recommendation(profile: dict, water: int):
+    """Print a brew recommendation for the selected profile and water amount."""
+    ratio = float(profile.get("ratio", 16))
+    recommendation = build_brew_recommendation(water, ratio)
+
+    print()
+    print("Brew recommendation:")
+    print(f"  Coffee dose: {recommendation['dose_grams']} g")
+    print(f"  Ode Gen 2: start at setting {recommendation['ode_gen2_setting']}")
+    print(f"  Basket: {recommendation['basket']}")
+    print(f"  Based on ratio 1:{ratio}")
 
 
 # ---------------------------------------------------------------------------
@@ -481,11 +490,26 @@ Environment variables:
         print(f"Days: {days_to_string(days)}")
         print(f"Time: {seconds_to_time_str(seconds)}")
         print(f"Water: {water} ml")
+        print_brew_recommendation(profile, water)
 
         create_and_save_schedule(aiden, profile['id'], days, seconds, water)
 
-    elif args.profile or args.time or args.days:
-        log.error("One-liner mode requires all three: --profile, --time, and --days")
+    elif args.profile:
+        profiles = aiden.get_profiles()
+        if not profiles:
+            log.error("No profiles found on your Aiden.")
+            sys.exit(1)
+
+        try:
+            profile = select_profile(profiles, args.profile)
+        except ValueError as e:
+            log.error(str(e))
+            sys.exit(1)
+
+        schedule_for_profile(aiden, profile, prompt_for_profile=False)
+
+    elif args.time or args.days:
+        log.error("If you provide --time or --days, you must also provide --profile.")
         sys.exit(1)
 
     else:

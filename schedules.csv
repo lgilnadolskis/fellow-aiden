@@ -1,2 +1,3 @@
 id,enabled,time,days,days_readable,amountOfWater,profileId,createdAt
-s1,True,08:00:00,"[false, false, false, false, false, false, false]",None,450,p0,
+s0,True,09:45:00,"[false, false, true, false, false, false, false]",Tue,449,p6,
+s1,True,11:15:00,"[false, false, false, true, false, false, false]",Wed,200,p6,
